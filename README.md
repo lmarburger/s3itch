@@ -43,30 +43,33 @@ This is still bleeding edge. Bumpy road ahead.
 
    ![](http://cl.ly/0o2f0q052g2l3c0a010U/content)
 
-5. This step is optional but to get the most out of this integration, you'll
-   want to run the following command to have the CloudApp Mac app automatically
-   copy the drop's link when it's uploaded. I don't think it's possible for
-   Skitch to copy the correct CloudApp share link, but it's still up in the air.
+5. This step is optional. To get the most out of this integration, run the
+   following command to have the CloudApp Mac app copy the new drop's link after
+   it has been uploaded by Skitch. I don't think it's possible for Skitch to
+   copy the correct CloudApp share link, but that's still up in the air.
 
    ```bash
    defaults write com.linebreak.CloudAppMacOSX CLUploadShouldCopyExternallyUploadedItems -bool YES
    ```
 
-   If you're running the stand-alone version of the CloudApp Mac app, you'll
-   have to use a different plist:
+   If you're running the [stand-alone version of the CloudApp][stand-alone],
+   you'll have to use a different plist:
 
    ```bash
    defaults write com.linebreak.CloudAppMacOSXSparkle CLUploadShouldCopyExternallyUploadedItems -bool YES
    ```
 
-   To disable this option in the future, run the same command but replace
-   **YES** with **NO**.
+   To disable this option in the future, run the same command replacing **YES**
+   with **NO**.
+
+
+[stand-alone]: http://getcloudapp.com/download
 
 
 Acknowledgements
 ================
 
-This integration is possible thank's to [Mathias Meyer's s3itch](s3itch) which
+This integration is possible thanks to [Mathias Meyer's s3itch](s3itch) which
 adds uploading to an S3 bucket to Skitch. Special thanks to
 [Eric Lindvall][eric] for encouragement and enlightenment.
 
