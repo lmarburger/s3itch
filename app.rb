@@ -1,47 +1,55 @@
 require 'bundler'
 Bundler.setup
 
+require 'cloudapp'
 require 'sinatra'
-require 'fog'
-require 'mime/types'
+require 'tempfile'
 
 class S3itchApp < Sinatra::Base
 
-  configure do
-    if ENV['HTTP_USER'] && ENV['HTTP_PASS']
-      use Rack::Auth::Basic, "Restricted Area" do |username, password|
-        [username, password] == [ENV['HTTP_USER'], ENV['HTTP_PASS']]
+  helpers do
+    def protected!
+      unless authorized?
+        response['WWW-Authenticate'] = %(Basic realm="Restricted Area")
+        throw :halt, [ 401, 'Not authorized\n' ]
       end
     end
+
+    def authorized?
+      auth.provided? && auth.basic? && auth.credentials
+    end
+
+    def auth
+      @auth ||= Rack::Auth::Basic::Request.new(request.env)
+    end
+
+    def token
+      Array(auth.credentials).last
+    end
+
+    def account
+      account = CloudApp::Account.using_token token
+    end
   end
-  # When Skitch uploads via WebDAV, it uses
-  # the file name as the URL and includes the
-  # image in the body.
+
+  get('/') do '<Redirect to KB article.>' end
+
+  # Skitch expects to make a HEAD request at Base URL + filename to ensure the
+  # file exists. Must fake it out.
+  get('/check/:name') do 200 end
+
   put '/:name' do
-    retries = 0
-    begin
-      content_type = MIME::Types.type_for(params[:name]).first.content_type
-      file = bucket.files.create(key: params[:name], public: true, body: request.body.read, content_type: content_type)
-      puts "Uploaded file #{params[:name]} to S3"
-      redirect "http://#{ENV['S3_BUCKET']}/#{params[:name]}", 201
-    rescue => e
-      puts "Error uploading file #{params[:name]} to S3: #{e.message}"
-      if e.message =~ /Broken pipe/ && retries < 5
-        retries += 1
-        retry
-      end
+    protected!
 
-      500
+    extension = File.extname params[:name]
+    filename  = File.basename params[:name], extension
+
+    Tempfile.open([ filename, extension ]) do |file|
+      file.write request.body.read
+      file.rewind
+      account.upload file, name: params[:name]
     end
-  end
 
-  delete '/:name' do
-    file = bucket.files.get(params[:name])
-    file.destroy
-  end
-
-  def bucket
-    s3 = Fog::Storage.new(provider: 'AWS', aws_access_key_id: ENV['AWS_ACCESS_KEY_ID'], aws_secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'], region: ENV['AWS_REGION'])
-    s3.directories.get(ENV['S3_BUCKET'])
+    201
   end
 end
