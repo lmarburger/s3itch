@@ -32,7 +32,7 @@ class S3itchApp < Sinatra::Base
     end
   end
 
-  get('/') do '<Redirect to KB article.>' end
+  get('/') do redirect('https://github.com/lmarburger/s3itch#readme', 302) end
 
   # Skitch expects to make a HEAD request at Base URL + filename to ensure the
   # file exists. Must fake it out.
